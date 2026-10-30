@@ -28,6 +28,31 @@ FILE_TYPES = {
 }
 
 
+def _redact_text(content):
+    """Replace the captured credential value in each match with REDACTED.
+
+    The first version of this substituted the whole match back in with
+    the word REDACTED appended, so "api_key=abc123" came out as
+    "api_key=abc123REDACTED": the file was marked sanitized and the
+    secret was still in it, readable by anyone. Only group 1, the value,
+    is replaced; the key name stays so the line still shows what was
+    there. A pattern with no capture group (possible in a custom regex
+    file) has its whole match replaced instead.
+    """
+    def _replace(match):
+        if match.lastindex:
+            # Keep what surrounds the value (an opening quote before it,
+            # a closing quote after it) so the line stays well formed.
+            start = match.start(1) - match.start(0)
+            end = match.end(1) - match.start(0)
+            return match.group(0)[:start] + "REDACTED" + match.group(0)[end:]
+        return "REDACTED"
+
+    for regex in CREDENTIAL_REGEXES:
+        content = regex.sub(_replace, content)
+    return content
+
+
 def sanitize_file(filepath):
     """
     Sanitizes a file by removing credentials matching the defined regular expressions.
@@ -48,11 +73,7 @@ def sanitize_file(filepath):
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
 
-        # Sanitize the content by replacing credentials with placeholders
-        sanitized_content = content
-        for regex in CREDENTIAL_REGEXES:
-            sanitized_content = regex.sub(r"\g<0>REDACTED", sanitized_content)  # Replace with "REDACTED"
-            
+        sanitized_content = _redact_text(content)
         # Write the sanitized content back to the file
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(sanitized_content)
@@ -94,17 +115,14 @@ def sanitize_jupyter_notebook(filepath):
         for cell in notebook_data["cells"]:
             if cell["cell_type"] == "code":
                 source = cell["source"]
-                if isinstance(source, list): # handling different jupyter notebook formats
-                    source_str = "".join(source) #join list of strings into one string
-                    sanitized_source = source_str
-                    for regex in CREDENTIAL_REGEXES:
-                        sanitized_source = regex.sub(r"\g<0>REDACTED", sanitized_source)
-                    cell["source"] = sanitized_source.splitlines(keepends=True) #convert back to list of strings
-                elif isinstance(source, str): #handling different jupyter notebook formats
-                    sanitized_source = source
-                    for regex in CREDENTIAL_REGEXES:
-                        sanitized_source = regex.sub(r"\g<0>REDACTED", sanitized_source)
-                    cell["source"] = sanitized_source
+                # A notebook cell source is either one string or a list
+                # of lines depending on the notebook's age; both shapes
+                # go through the same redaction and keep their shape.
+                if isinstance(source, list):
+                    source_str = "".join(source)
+                    cell["source"] = _redact_text(source_str).splitlines(keepends=True)
+                elif isinstance(source, str):
+                    cell["source"] = _redact_text(source)
                 else:
                     logging.warning(f"Unexpected format for cell source: {type(source)}")
 
@@ -212,12 +230,13 @@ def main():
         sys.exit(1)
     
     if args.filepath:
-        # Specific file path provided
+        # A missing or unreadable target is a failed run. Exiting 0 here
+        # let cleanup scripts report success over files never touched.
         if sanitize_file(args.filepath):
             logging.info("Sanitization complete.")
-        else:
-            logging.error("Sanitization failed.")
-        sys.exit(0)  # Exit after processing the specified file
+            sys.exit(0)
+        logging.error("Sanitization failed.")
+        sys.exit(1)
 
     if args.filetype == "jupyter" and args.directory:
       find_and_sanitize_jupyter_notebooks(args.directory)
@@ -237,6 +256,7 @@ def main():
                 logging.info("Sanitization complete.")
             else:
                 logging.error("Sanitization failed.")
+                sys.exit(1)
     elif args.all:
         # Sanitize all supported file types
         for filetype, filepath in FILE_TYPES.items():
@@ -248,7 +268,7 @@ def main():
         logging.info("Sanitization complete for all supported file types.")
 
     # Example usages (these won't actually execute in the script, but serve as documentation)
-    """
+    r"""
     Example Usages:
 
     1. Sanitize bash history:
