@@ -1,3 +1,5 @@
+![Banner](banner.png)
+
 # cma-Credential-Sanitizer
 Removes secrets from command history files (bash, zsh, powershell) and Jupyter Notebooks. Identifies and redacts API keys, passwords, and other credentials using regular expressions, backing up original files before modification.  Uses `os` for file system access, `re` for regex, and potentially `shutil` for backups. - Focused on Automates the rotation, storage, and injection of credentials into various applications and systems.  Manages API keys, passwords, and other sensitive information, leveraging secure vaults and time-based token generation to minimize the risk of credential compromise.
 
