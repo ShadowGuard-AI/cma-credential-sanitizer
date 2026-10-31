@@ -53,21 +53,35 @@ def _redact_text(content):
     return content
 
 
-def sanitize_file(filepath):
+def _make_backup(filepath):
+    """Write a timestamped backup, owner read and write only (0600).
+
+    A backup holds the original content, so it holds every removed
+    secret in clear. It is credential material and is logged as such.
+    """
+    backup_filepath = filepath + "." + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".bak"
+    shutil.copy2(filepath, backup_filepath)  # copy2 preserves metadata
+    os.chmod(backup_filepath, 0o600)
+    logging.warning(f"Backup written to: {backup_filepath}. This backup contains the removed secrets in clear text and must be handled as credential material.")
+    return backup_filepath
+
+
+def sanitize_file(filepath, backup=False):
     """
     Sanitizes a file by removing credentials matching the defined regular expressions.
 
     Args:
         filepath (str): The path to the file to sanitize.
+        backup (bool): Write a timestamped .bak copy of the original
+            first. Off by default, because the backup holds the removed
+            secrets in clear.
 
     Returns:
         bool: True if the file was successfully sanitized, False otherwise.
     """
     try:
-        # Create a backup of the original file
-        backup_filepath = filepath + "." + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".bak"
-        shutil.copy2(filepath, backup_filepath)  # copy2 preserves metadata
-        logging.info(f"Backed up original file to: {backup_filepath}")
+        if backup:
+            _make_backup(filepath)
 
         # Read the file content
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
@@ -89,12 +103,26 @@ def sanitize_file(filepath):
         return False
 
 
-def sanitize_jupyter_notebook(filepath):
+def _redact_text_field(value):
+    """Redact a notebook text field, keeping its string or list shape."""
+    if isinstance(value, str):
+        return _redact_text(value)
+    if isinstance(value, list):
+        joined = "".join(item for item in value if isinstance(item, str))
+        return _redact_text(joined).splitlines(keepends=True)
+    return value
+
+
+def sanitize_jupyter_notebook(filepath, backup=False):
     """
-    Sanitizes a Jupyter Notebook file by removing credentials from code cells.
+    Sanitizes a Jupyter Notebook file by removing credentials from code
+    and markdown cell sources and from code cell outputs.
 
     Args:
         filepath (str): The path to the Jupyter Notebook file.
+        backup (bool): Write a timestamped .bak copy of the original
+            first. Off by default, because the backup holds the removed
+            secrets in clear.
 
     Returns:
         bool: True if the file was successfully sanitized, False otherwise.
@@ -102,29 +130,36 @@ def sanitize_jupyter_notebook(filepath):
     try:
         import json  # Import here to avoid dependency if not using Jupyter functionality
 
-        # Create a backup of the original file
-        backup_filepath = filepath + "." + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".bak"
-        shutil.copy2(filepath, backup_filepath)
-        logging.info(f"Backed up original file to: {backup_filepath}")
+        if backup:
+            _make_backup(filepath)
 
         # Read the JSON content of the Jupyter Notebook
         with open(filepath, "r", encoding="utf-8") as f:
             notebook_data = json.load(f)
 
-        # Iterate through the cells and sanitize code cells
+        # Iterate through the cells and sanitize code and markdown
+        # cell sources, plus code cell outputs. Outputs and markdown
+        # used to be skipped, so a secret pasted into a printed result
+        # or a note survived a run that logged success.
         for cell in notebook_data["cells"]:
-            if cell["cell_type"] == "code":
-                source = cell["source"]
+            if cell["cell_type"] in ("code", "markdown"):
+                source = cell.get("source", "")
                 # A notebook cell source is either one string or a list
                 # of lines depending on the notebook's age; both shapes
                 # go through the same redaction and keep their shape.
-                if isinstance(source, list):
-                    source_str = "".join(source)
-                    cell["source"] = _redact_text(source_str).splitlines(keepends=True)
-                elif isinstance(source, str):
-                    cell["source"] = _redact_text(source)
+                if isinstance(source, (list, str)):
+                    cell["source"] = _redact_text_field(source)
                 else:
                     logging.warning(f"Unexpected format for cell source: {type(source)}")
+            if cell["cell_type"] == "code":
+                for output in cell.get("outputs", []):
+                    if "text" in output:
+                        output["text"] = _redact_text_field(output["text"])
+                    if isinstance(output.get("data"), dict):
+                        for mime, data_value in output["data"].items():
+                            output["data"][mime] = _redact_text_field(data_value)
+                    if isinstance(output.get("traceback"), list):
+                        output["traceback"] = [_redact_text(line) for line in output["traceback"]]
 
 
         # Write the sanitized content back to the file
@@ -148,18 +183,19 @@ def sanitize_jupyter_notebook(filepath):
         return False
 
 
-def find_and_sanitize_jupyter_notebooks(directory):
+def find_and_sanitize_jupyter_notebooks(directory, backup=False):
     """
     Recursively finds and sanitizes Jupyter Notebook files within a directory.
 
     Args:
         directory (str): The directory to search in.
+        backup (bool): Passed through to each notebook sanitize.
     """
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith(".ipynb"):
                 filepath = os.path.join(root, file)
-                sanitize_jupyter_notebook(filepath)
+                sanitize_jupyter_notebook(filepath, backup=backup)
 
 
 def setup_argparse():
@@ -197,6 +233,11 @@ def setup_argparse():
         "-r",
         help="Path to a file containing custom regular expressions (one per line).",
     )
+    parser.add_argument(
+        "--backup",
+        action="store_true",
+        help="Write a timestamped .bak copy of each original file before sanitizing, with owner only permissions (0600). Off by default. A backup contains the removed secrets in clear text and must be handled as credential material.",
+    )
 
     return parser
 
@@ -228,18 +269,24 @@ def main():
     if not any([args.filetype, args.filepath, args.directory, args.all]):
         parser.print_help()
         sys.exit(1)
-    
+
+    # -d only searches for Jupyter notebooks. Without -t jupyter it
+    # used to fall through every branch, do nothing, and exit 0.
+    if args.directory and args.filetype != "jupyter":
+        logging.error("--directory (-d) requires --filetype jupyter (-t jupyter): no file type was given, so nothing was sanitized.")
+        sys.exit(1)
+
     if args.filepath:
         # A missing or unreadable target is a failed run. Exiting 0 here
         # let cleanup scripts report success over files never touched.
-        if sanitize_file(args.filepath):
+        if sanitize_file(args.filepath, backup=args.backup):
             logging.info("Sanitization complete.")
             sys.exit(0)
         logging.error("Sanitization failed.")
         sys.exit(1)
 
     if args.filetype == "jupyter" and args.directory:
-      find_and_sanitize_jupyter_notebooks(args.directory)
+      find_and_sanitize_jupyter_notebooks(args.directory, backup=args.backup)
       sys.exit(0)
 
 
@@ -247,12 +294,12 @@ def main():
         # Sanitize based on file type
         if args.filetype == "jupyter":
             if args.directory:
-                find_and_sanitize_jupyter_notebooks(args.directory)
+                find_and_sanitize_jupyter_notebooks(args.directory, backup=args.backup)
             else:
-                find_and_sanitize_jupyter_notebooks(os.getcwd()) # Default to current directory
+                find_and_sanitize_jupyter_notebooks(os.getcwd(), backup=args.backup) # Default to current directory
         else:
             filepath = os.path.expanduser(FILE_TYPES[args.filetype])
-            if sanitize_file(filepath):
+            if sanitize_file(filepath, backup=args.backup):
                 logging.info("Sanitization complete.")
             else:
                 logging.error("Sanitization failed.")
@@ -261,10 +308,10 @@ def main():
         # Sanitize all supported file types
         for filetype, filepath in FILE_TYPES.items():
             if filetype == "jupyter":
-                find_and_sanitize_jupyter_notebooks(os.getcwd()) # Default to current directory for Jupyter
+                find_and_sanitize_jupyter_notebooks(os.getcwd(), backup=args.backup) # Default to current directory for Jupyter
             else:
                 filepath = os.path.expanduser(filepath)
-                sanitize_file(filepath)
+                sanitize_file(filepath, backup=args.backup)
         logging.info("Sanitization complete for all supported file types.")
 
     # Example usages (these won't actually execute in the script, but serve as documentation)
