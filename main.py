@@ -83,7 +83,13 @@ def sanitize_file(filepath, backup=False):
         if backup:
             _make_backup(filepath)
 
-        # Read the file content
+        # The file is rewritten whether anything matched or not, and
+        # the read drops bytes that are not valid UTF-8 on the way in.
+        # A history file with damaged or foreign encoding comes back
+        # normalised and silently shorter, and a shell appending to
+        # its history at the same moment can lose lines to the
+        # truncate and rewrite. Sanitising a live history file is a
+        # race the caller should close first by ending the session.
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
 
@@ -162,7 +168,10 @@ def sanitize_jupyter_notebook(filepath, backup=False):
                         output["traceback"] = [_redact_text(line) for line in output["traceback"]]
 
 
-        # Write the sanitized content back to the file
+        # The whole notebook is reserialised at indent 1 whatever its
+        # original formatting was, so a one secret notebook comes back
+        # with every line moved. Anyone diffing the result sees a full
+        # file rewrite and cannot spot what was actually redacted.
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(notebook_data, f, indent=1)  # indent for readability
 
@@ -305,7 +314,10 @@ def main():
                 logging.error("Sanitization failed.")
                 sys.exit(1)
     elif args.all:
-        # Sanitize all supported file types
+        # The per file results are not looked at in this mode, unlike
+        # the single file branches above that exit 1 on failure. A
+        # missing history file in an --all run is logged inside
+        # sanitize_file and then covered by the complete line below.
         for filetype, filepath in FILE_TYPES.items():
             if filetype == "jupyter":
                 find_and_sanitize_jupyter_notebooks(os.getcwd(), backup=args.backup) # Default to current directory for Jupyter
