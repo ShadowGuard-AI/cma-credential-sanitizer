@@ -3,161 +3,113 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cma Credential Sanitizer: what it is, how it runs, where it stops</title>
-<meta name="description" content="Cma Credential Sanitizer is one of my projects. The README in the repo is short, so this page sticks to what the files themselves show.">
+<title>cma-credential-sanitizer: The Starling Murmuration Forecast</title>
+<meta name="description" content="Removes secrets from command history files and Jupyter Notebooks, redacting API keys, passwords, and other credentials using regular expressions. All example values are plainly fictional placeholders.">
 <style>
-:root {
-  --bg: #181c3a; --panel: #22284e; --ink: #eeeef6;
-  --mut: #2d3669;
-  --acc: #7eb8f7; --acc2: #f7ba7e;
-  --line: #22284e;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink);
-  font-family: Verdana, Geneva, sans-serif; line-height: 1.55; }
-code, pre, .mono { font-family: 'Lucida Console', monospace; }
-a { color: var(--acc2); }
-.hero { padding: 3rem 6vw 1rem; }
-.hero img.banner { width: 100%; height: auto; border: 1px solid var(--line);
-  border-radius: 10px; }
-.logo { width: 92px; height: 92px; border-radius: 18px;
-  border: 1px solid var(--line); }
-h1 { font-size: 2.4rem; margin: 0.4em 0 0.1em; }
-h2 { border-bottom: 2px solid var(--acc); padding-bottom: 0.2em;
-  margin-top: 2em; }
-.lede { font-size: 1.15rem; max-width: 62ch; }
-main { padding: 0 6vw 3rem; max-width: 1180px; margin: 0 auto; }
-.grid { display: grid; gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
-.card { background: var(--panel); border: 1px solid var(--line);
-  border-radius: 12px; padding: 1rem 1.2rem; }
-.card.pop { animation: rise 0.7s ease both; }
-@keyframes rise { from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; } }
-pre.code { background: #101014; color: #e8e6df; padding: 1rem 1.2rem;
-  border-radius: 12px; overflow-x: auto; font-size: 0.86rem;
-  border-left: 5px solid var(--acc); }
-table { border-collapse: collapse; width: 100%; }
-td, th { border-bottom: 1px solid var(--line); padding: 0.45rem 0.6rem;
-  text-align: left; }
-.shots { display: grid; gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.shots img { width: 100%; height: auto; border: 1px solid var(--line);
-  border-radius: 10px; background: #f4f1e8; }
-footer { padding: 2rem 6vw; border-top: 1px solid var(--line);
-  color: var(--mut); }
-.rail { display: flex; gap: 1.2rem; align-items: flex-start; }
-.rail nav { position: sticky; top: 1rem; min-width: 180px; }
-@media (max-width: 760px) { .rail { flex-direction: column; }
-  .rail nav { position: static; } }
-@media (prefers-reduced-motion: reduce) {
-  .card.pop { animation: none; } * { scroll-behavior: auto; } }
+@font-face{font-family:'Baloo Tammudu 2';src:url('fonts/BalooTammudu2.ttf') format('truetype');}
+@font-face{font-family:'Barlow';src:url('fonts/Barlow.ttf') format('truetype');}
+:root{--sky:#b9c6da;--sky2:#d5deeb;--gold:#d9a91f;--wood:#4a3421;--clover:#4f7d3a;--dark:#2b2118}
+*{box-sizing:border-box}body{margin:0;background:var(--sky);color:var(--dark);font-family:'Barlow',sans-serif;line-height:1.65}
+h1,h2,h3{font-family:'Baloo Tammudu 2',sans-serif;color:var(--wood)}
+.hero img.heroimg{width:100%;height:56vh;object-fit:cover;display:block}
+.hero .in{padding:1rem 6vw 2rem;max-width:1120px;margin:0 auto}
+.logo{width:200px}
+main{padding:0 6vw 3rem;max-width:1120px;margin:0 auto}
+nav{display:flex;gap:.9rem;flex-wrap:wrap;margin:1.2rem 0}
+.reed{display:inline-block;text-decoration:none;color:var(--wood);font-family:'Baloo Tammudu 2',sans-serif;padding:.6rem 1.3rem;background:linear-gradient(100deg,#c9a86a,#e3c37c,#c9a86a);border:2px solid var(--wood);text-align:center;position:relative;overflow:hidden}
+.reed:hover{background:linear-gradient(100deg,#c9a86a,#f4e3a1 45%,#c9a86a)}
+.reed:active{background:linear-gradient(100deg,#e3c37c,#f4e3a1,#e3c37c)}
+.reed:focus-visible{outline:3px double var(--clover);outline-offset:5px}
+.reed::before{content:none}
+.plate{background:var(--sky2);border:4px solid var(--wood);padding:.4rem 1.8rem 1.5rem;margin:1.8rem 0;position:relative}
+.plate::after{content:'';position:absolute;top:10px;right:14px;width:26px;height:14px;background:var(--wood);clip-path:polygon(0 50%,45% 0,60% 35%,100% 10%,70% 55%,100% 90%,55% 70%,40% 100%)}
+.plate h2{font-size:1.5rem;border-bottom:2px solid var(--clover);padding-bottom:.35rem}
+pre{background:#eef1f6;padding:1rem;overflow-x:auto}
+.cmd{font-size:1.05rem}
+a{color:#5d4416}
+a::before{content:'';display:inline-block;width:14px;height:14px;margin-right:.45em;border:2px solid var(--wood);border-radius:50% 50% 50% 0;vertical-align:-2px}
+a:hover::before{background:var(--gold)}
+.ant{height:9px;margin:2rem 0;background-image:radial-gradient(circle,var(--wood) 2.6px,transparent 3.2px),radial-gradient(circle at 70% 30%,var(--clover) 3.4px,transparent 4px);background-size:30px 9px;background-repeat:repeat-x}
+table{border-collapse:collapse;width:100%}td,th{padding:.5rem .7rem;border-bottom:1px solid #9db0c9;text-align:left;vertical-align:top}
+.flag{background:#f3dfd2;border:2px solid #a34d2e;padding:.2rem 1.4rem 1rem;margin:1.2rem 0}
+.callout{background:var(--wood);color:#eef3fa;padding:.2rem 1.4rem 1rem;margin:1.2rem 0}
+.callout h3,.flag h3{font-size:1.25rem;font-family:'Baloo Tammudu 2',sans-serif}
+.callout h3{color:#f2d06b}.flag h3{color:#7d2f16}
+footer{padding:1rem 6vw 2.4rem;max-width:1120px;margin:0 auto}
 </style>
 </head>
-<body class="layout-cards">
-<!-- This page exists for cma-credential-sanitizer alone: the layout (index-cards),
-     the colors, and the type were picked for this project, not
-     shared with the other project pages. The code block below is
-     copied from the file it names, line for line. If it looks
-     plain, that is because the project is plain, and I would
-     rather the page match the project than dress it up. The one
-     thing I will not do here is oversell: what this project does
-     not do is stated on the page, not hidden from it. -->
+<body>
 <header class="hero">
-  <img class="logo" src="assets/logo.png" alt="Cma Credential Sanitizer logo">
-  <img class="banner" src="assets/banner.png" alt="">
-  <h1>Cma Credential Sanitizer</h1>
-  <p class="mono"><a href="https://github.com/ShadowGuard-AI/cma-credential-sanitizer">github.com/ShadowGuard-AI/cma-credential-sanitizer</a></p>
+<img class="heroimg" src="assets/intro-banner.png" alt="Backlit clover and grass heads, a fence and dark hedgerow, and a murmuration turning high in a dusk sky, no lettering anywhere">
+<div class="in">
+<img class="logo" src="assets/logo.png" alt="A ribbon of starling silhouettes in an S curve across a flat gold disc, three birds trailing at the tail">
+<h1>cma-credential-sanitizer</h1>
+<p>A field guide plate sequence for an evening watch. All example values on this page are plainly fictional placeholders, labelled as such, and no real credential value appears anywhere on the page.</p>
+<nav>
+<a class="reed" href="#controls">Sanitize the History File</a>
+<a class="reed" href="#controls">Search a Directory of Notebooks</a>
+<a class="reed" href="#controls">Sanitize All Supported Types</a>
+<a class="reed" href="#controls">Add Custom Patterns</a>
+<a class="reed" href="#cautions">Write Backups First</a>
+<a class="reed" href="#controls">Show Help</a>
+</nav>
+</div>
 </header>
-
 <main>
-  <section class="rail">
-    <nav aria-label="on this page">
-      <p class="mono"><a href="#run">Run it</a><br>
-      <a href="#files">The files</a><br>
-      <a href="#sheets">The sheets</a><br>
-      <a href="https://github.com/ShadowGuard-AI/cma-credential-sanitizer">The repo</a></p>
-    </nav>
-    <div>
-      <p class="lede">Cma Credential Sanitizer is one of my projects. The README in the repo is short, so this page sticks to what the files themselves show.</p>
-      <div class="grid">
-        <div class="card pop"><h3>What it is</h3>
-          <p>Cma Credential Sanitizer: 3 files, 296 counted
-          lines across Python 275, Markdown 19, Text 2. One job, done in the
-          open, in files you can read.</p></div>
-        <div class="card pop"><h3>The biggest piece</h3>
-          <p><code>main.py</code> carries the most
-          lines. If the project grows, that file is where the growth
-          lands first, for better or worse.</p></div>
-        <div class="card pop"><h3>The honest gap</h3>
-          <p>No test files yet. That is the honest gap, and the roadmap in the visuals folder says what the first one should cover.</p></div>
-      </div>
-      <section id="run">
-        <h2>Run it</h2>
-        <p>The repo README has the exact commands for this one. The
-        shape is the shape for most of my projects: clone it, read the
-        top file first so you know what will happen, then run it on
-        something you do not mind breaking.</p>
-        <p class="mono">$ git clone https://github.com/ShadowGuard-AI/cma-credential-sanitizer.git<br>$ cd cma-credential-sanitizer</p>
-      </section>
-      
-  <section aria-label="real code">
-    <h2>The code, as it sits in the repo</h2>
-    <p>From <code>main.py</code>, line 29 on. I did
-    not tidy it for the page. What you see is what the file has.</p>
-    <pre class="code"><code>
-
-def sanitize_file(filepath):
-    &quot;&quot;&quot;
-    Sanitizes a file by removing credentials matching the defined regular expressions.
-
-    Args:
-        filepath (str): The path to the file to sanitize.
-
-    Returns:
-        bool: True if the file was successfully sanitized, False otherwise.
-    &quot;&quot;&quot;
-    try:
-        # Create a backup of the original file
-        backup_filepath = filepath + &quot;.&quot; + datetime.datetime.now().strftime(&quot;%Y%m%d%H%M%S&quot;) + &quot;.bak&quot;
-        shutil.copy2(filepath, backup_filepath)  # copy2 preserves metadata
-        logging.info(f&quot;Backed up original file to: {backup_filepath}&quot;)
-
-        # Read the file content
-        with open(filepath, &quot;r&quot;, encoding=&quot;utf-8&quot;, errors=&quot;ignore&quot;) as f:
-            content = f.read()</code></pre>
-  </section>
-      <section id="files">
-        <h2>The files that matter</h2>
-        <table><tr><th>File</th><th>Lines</th></tr>
-        <tr><td><code>main.py</code></td><td>275</td></tr>
-        <tr><td><code>README.md</code></td><td>19</td></tr>
-        <tr><td><code>requirements.txt</code></td><td>2</td></tr>
-        </table>
-        <p>Names doing the work: <span class="mono">sanitize_file, sanitize_jupyter_notebook, find_and_sanitize_jupyter_notebooks, setup_argparse, main</span>.</p>
-      </section>
-      <section id="sheets">
-        <h2>Drawn by hand</h2>
-        <p>I sketch my projects on notebook paper so I have to
-        understand them well enough to draw them. The full set,
-        with the counts and how they were counted, is the
-        <a href="https://github.com/ShadowGuard-AI/cma-credential-sanitizer/tree/main/cma-credential-sanitizer-Visuals">cma-credential-sanitizer-Visuals</a>
-        folder in the repo. Nothing is drawn over the binder holes.
-        That is a rule, not a style.</p>
-        <div class="shots">
-          <img src="assets/architecture.png" alt="Hand drawn architecture sheet for Cma Credential Sanitizer">
-          <img src="assets/flowchart.png" alt="Hand drawn flowchart sheet for Cma Credential Sanitizer">
-          <img src="assets/product-map.png" alt="Hand drawn product map sheet for Cma Credential Sanitizer">
-        </div>
-      </section>
-    </div>
-  </section>
+<section class="plate" id="work"><h2>What Gets Redacted</h2>
+<p>cma-credential-sanitizer removes secrets from command history files, for bash, zsh, and PowerShell, and from Jupyter Notebooks. It identifies and redacts API keys, passwords, and other credentials using regular expressions. In notebooks it redacts code cell sources, markdown cell sources, and code cell outputs.</p>
+<p>No backup is written by default. With --backup the tool writes a timestamped .bak copy of each original file first, with owner only permissions, 0600. That backup contains the removed secrets in clear text and must be handled as credential material.</p>
+<div class="callout"><h3>Directory Means Notebooks Only</h3><p>Passing --directory without --filetype jupyter is rejected with exit 1, because the directory search only applies to notebooks.</p></div>
+<p>The machinery the source names: it uses os for file system access, re for regex, and shutil for backups when --backup is given, all from the standard library, which is why requirements.txt in this repository is an empty file.</p>
+</section>
+<div class="ant"></div>
+<section class="plate"><h2>Four Kinds of File</h2>
+<p>bash history at ~/.bash_history. zsh history at ~/.zsh_history. PowerShell history at ~/Documents/WindowsPowerShell/PSReadLine/ConsoleHost_history.txt. Notebooks found by recursive search for .ipynb files.</p>
+<div class="flag"><h3>Unhyphenated Name in the Source</h3>
+<pre>git clone https://github.com/ShadowGuardAI/cma-credential-sanitizer</pre>
+<p>The install passage is a single clone line, and as printed it reads ShadowGuardAI with no hyphen, the wrong organisation name. The address as printed does not name this repository's organisation, which is ShadowGuard-AI. No further install steps are added, because the source gives none.</p></div>
+<p><a href="https://github.com/ShadowGuard-AI/cma-credential-sanitizer">The repository on GitHub</a></p>
+</section>
+<div class="ant"></div>
+<section class="plate" id="controls"><h2>Seven Controls</h2>
+<div class="flag"><h3>Placeholder in the Source</h3><p>The source usage line, ./cma-credential-sanitizer [params], is a placeholder and runs nothing. The worked examples below are preserved in the code, retargeted to the repository's real entry point, main.py, and labelled as retargeted, because the examples in the source comments name a script file that is not in the repository.</p></div>
+<pre class="cmd">python3 main.py -t bash
+python3 main.py -f /path/to/my/file.txt
+python3 main.py -a
+python3 main.py -t jupyter -d /path/to/notebooks
+python3 main.py -t bash -r custom_regexes.txt</pre>
+<table>
+<tr><td><b>-h</b></td><td>Shows a help message and exits.</td></tr>
+<tr><td><b>-t, --filetype</b></td><td>Chooses the type of file to sanitize, with choices bash, zsh, powershell, and jupyter.</td></tr>
+<tr><td><b>-f, --filepath</b></td><td>Gives the specific file path to sanitize and overrides --filetype if provided.</td></tr>
+<tr><td><b>-d, --directory</b></td><td>Gives the directory to recursively search for Jupyter Notebooks, and only applies when --filetype is jupyter.</td></tr>
+<tr><td><b>-a, --all</b></td><td>Sanitizes all supported file types, with notebooks searched recursively in the current directory.</td></tr>
+<tr><td><b>-r, --regex_file</b></td><td>Gives the path to a file containing custom regular expressions, one per line.</td></tr>
+<tr><td><b>--backup</b></td><td>Writes the timestamped .bak copy described on the first plate, and is off by default. It has no short form.</td></tr>
+</table>
+<div class="flag"><h3>Undescribed in the Source List</h3><p>The source describes --filepath and --backup in full, and gives --filetype, --directory, --all, and --regex_file only as No description provided. The seven entries above come from the argument parser in main.py.</p></div>
+</section>
+<div class="ant"></div>
+<section class="plate" id="redaction"><h2>What a Redaction Looks Like</h2>
+<p>The built in patterns match assignments for api_key, password, secret, and access_token, and bearer tokens following the word bearer. Only the captured value is replaced, with the word REDACTED, while the key name stays and any quotes around the value stay, so the line still shows what kind of thing was there.</p>
+<p>One worked line, a fictional placeholder and nothing else:</p>
+<pre>api_key = "fictional-example-value"
+comes back as
+api_key = "REDACTED"</pre>
+<p>A pattern with no capture group, possible in a custom regex file, has its whole match replaced instead. For notebooks: cell sources keep their shape, whether one string or a list of lines, and code cell outputs are redacted in their text, in their data values, and in their tracebacks.</p>
+</section>
+<div class="ant"></div>
+<section class="plate" id="cautions"><h2>Backups Hold the Secrets</h2>
+<div class="callout"><h3>A Backup Is Credential Material</h3><p>A backup holds the removed secrets in clear text and is credential material. With --backup the tool writes a timestamped .bak copy of each original file first, with owner only permissions, 0600.</p></div>
+<p>Cautions at full size, because this tool rewrites the files it touches. With no action flag at all, the tool prints its help and exits with code 1. A --filepath run that fails exits with code 1, while an --all run does not check the per file results, so a missing history file in that mode is logged inside the run and then covered by a closing line saying sanitization is complete.</p>
+<p>Every file is rewritten whether anything matched or not, and reading drops bytes that are not valid UTF-8, so a history file with damaged or foreign encoding comes back normalised and silently shorter. Sanitizing a live history file races the shell that is still appending to it, and the caller should close that session first. A sanitized notebook is reserialised at indent 1 whatever its original formatting was, so a diff of the result shows a whole file rewrite and cannot show what was actually redacted.</p>
+<div class="flag"><h3>Unhyphenated Name in the Source</h3>
+<pre>Copyright (c) ShadowGuardAI</pre>
+<p>That licence line is unhyphenated and wrong. The LICENSE file itself carries the MIT License. Both facts are printed here, the first under this flag.</p></div>
+<h2>License, With a Fault Flagged</h2>
+<p>Licence closes the plates with the fault above flagged, not smoothed over.</p>
+</section>
 </main>
-<footer>
-  <p>Cma Credential Sanitizer is one of my projects. This page was written
-  from the repo itself on 2026-10-30: the counts are the
-  repo's counts, the code is the repo's code, and the gaps are the
-  repo's gaps.</p>
-</footer>
+<footer><p>Theme: The Starling Murmuration Forecast. Type: Baloo Tammudu 2 for headings, Barlow for reading, both SIL Open Font License 1.1. The lettering reference Skirmisher was reference only and is not embedded. Every example value on this page is a fictional placeholder.</p></footer>
 </body>
 </html>
