@@ -3,113 +3,109 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>cma-credential-sanitizer: The Starling Murmuration Forecast</title>
-<meta name="description" content="Removes secrets from command history files and Jupyter Notebooks, redacting API keys, passwords, and other credentials using regular expressions. All example values are plainly fictional placeholders.">
+<title>cma-credential-sanitizer: The Scraping Bench</title>
 <style>
-@font-face{font-family:'Baloo Tammudu 2';src:url('fonts/BalooTammudu2.ttf') format('truetype');}
-@font-face{font-family:'Barlow';src:url('fonts/Barlow.ttf') format('truetype');}
-:root{--sky:#b9c6da;--sky2:#d5deeb;--gold:#d9a91f;--wood:#4a3421;--clover:#4f7d3a;--dark:#2b2118}
-*{box-sizing:border-box}body{margin:0;background:var(--sky);color:var(--dark);font-family:'Barlow',sans-serif;line-height:1.65}
-h1,h2,h3{font-family:'Baloo Tammudu 2',sans-serif;color:var(--wood)}
-.hero img.heroimg{width:100%;height:56vh;object-fit:cover;display:block}
-.hero .in{padding:1rem 6vw 2rem;max-width:1120px;margin:0 auto}
-.logo{width:200px}
-main{padding:0 6vw 3rem;max-width:1120px;margin:0 auto}
-nav{display:flex;gap:.9rem;flex-wrap:wrap;margin:1.2rem 0}
-.reed{display:inline-block;text-decoration:none;color:var(--wood);font-family:'Baloo Tammudu 2',sans-serif;padding:.6rem 1.3rem;background:linear-gradient(100deg,#c9a86a,#e3c37c,#c9a86a);border:2px solid var(--wood);text-align:center;position:relative;overflow:hidden}
-.reed:hover{background:linear-gradient(100deg,#c9a86a,#f4e3a1 45%,#c9a86a)}
-.reed:active{background:linear-gradient(100deg,#e3c37c,#f4e3a1,#e3c37c)}
-.reed:focus-visible{outline:3px double var(--clover);outline-offset:5px}
-.reed::before{content:none}
-.plate{background:var(--sky2);border:4px solid var(--wood);padding:.4rem 1.8rem 1.5rem;margin:1.8rem 0;position:relative}
-.plate::after{content:'';position:absolute;top:10px;right:14px;width:26px;height:14px;background:var(--wood);clip-path:polygon(0 50%,45% 0,60% 35%,100% 10%,70% 55%,100% 90%,55% 70%,40% 100%)}
-.plate h2{font-size:1.5rem;border-bottom:2px solid var(--clover);padding-bottom:.35rem}
-pre{background:#eef1f6;padding:1rem;overflow-x:auto}
-.cmd{font-size:1.05rem}
-a{color:#5d4416}
-a::before{content:'';display:inline-block;width:14px;height:14px;margin-right:.45em;border:2px solid var(--wood);border-radius:50% 50% 50% 0;vertical-align:-2px}
-a:hover::before{background:var(--gold)}
-.ant{height:9px;margin:2rem 0;background-image:radial-gradient(circle,var(--wood) 2.6px,transparent 3.2px),radial-gradient(circle at 70% 30%,var(--clover) 3.4px,transparent 4px);background-size:30px 9px;background-repeat:repeat-x}
-table{border-collapse:collapse;width:100%}td,th{padding:.5rem .7rem;border-bottom:1px solid #9db0c9;text-align:left;vertical-align:top}
-.flag{background:#f3dfd2;border:2px solid #a34d2e;padding:.2rem 1.4rem 1rem;margin:1.2rem 0}
-.callout{background:var(--wood);color:#eef3fa;padding:.2rem 1.4rem 1rem;margin:1.2rem 0}
-.callout h3,.flag h3{font-size:1.25rem;font-family:'Baloo Tammudu 2',sans-serif}
-.callout h3{color:#f2d06b}.flag h3{color:#7d2f16}
-footer{padding:1rem 6vw 2.4rem;max-width:1120px;margin:0 auto}
+@font-face { font-family: "Philosopher"; src: url("fonts/Philosopher-400.woff2") format("woff2"); font-weight: 400; }
+@font-face { font-family: "Philosopher"; src: url("fonts/Philosopher-700.woff2") format("woff2"); font-weight: 700; }
+@font-face { font-family: "Quattrocento Sans"; src: url("fonts/QuattrocentoSans-400.woff2") format("woff2"); font-weight: 400; }
+@font-face { font-family: "Quattrocento Sans"; src: url("fonts/QuattrocentoSans-700.woff2") format("woff2"); font-weight: 700; }
+:root {
+  --bench: #f4efe6; --vellum: #efe6d0; --ink: #38322a; --soft: #7a7060;
+  --steel: #5d6a72; --thread: #a33327; --pumice: #8d8578; --line: #ddd2ba; --card: #fffdf6;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bench); color: var(--ink); font-family: "Quattrocento Sans", sans-serif; line-height: 1.55; font-size: 17px; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 20px 64px; }
+header.hero { text-align: center; padding: 52px 0 8px; }
+img.hero-logo { width: min(430px, 82vw); border-radius: 10px; box-shadow: 0 10px 34px rgba(56,50,42,.22); }
+h1, h2 { font-family: "Philosopher", serif; line-height: 1.15; }
+h1 { font-size: clamp(27px, 4.6vw, 43px); margin: 26px 0 6px; }
+.tagline { color: var(--soft); font-size: 19px; margin: 0 auto; max-width: 680px; }
+.btns { margin: 22px 0 6px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+a.btn { font-family: "Philosopher", serif; text-decoration: none; padding: 11px 22px; border-radius: 999px; border: 2px solid var(--steel); color: var(--steel); background: transparent; }
+a.btn.solid { background: var(--thread); border-color: var(--thread); color: #fff; }
+figure { margin: 30px 0; }
+figure img { width: 100%; border-radius: 10px; display: block; box-shadow: 0 8px 28px rgba(56,50,42,.18); }
+figcaption { color: var(--soft); font-size: 15px; text-align: center; margin-top: 9px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 34px 0; }
+.fact { background: var(--card); border: 1px solid var(--line); border-top: 5px solid var(--thread); border-radius: 8px; padding: 14px 16px; }
+.fact b { display: block; font-family: "Philosopher", serif; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--steel); margin-bottom: 4px; }
+section { margin: 38px 0; }
+h2 { font-size: 27px; margin: 0 0 12px; border-bottom: 2px solid var(--line); padding-bottom: 7px; }
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+pre { background: #2f2b26; color: #f1ead9; padding: 15px 18px; border-radius: 8px; overflow-x: auto; font-size: 14.5px; }
+table { border-collapse: collapse; width: 100%; background: var(--card); }
+th, td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; }
+th { font-family: "Philosopher", serif; background: var(--vellum); }
+.hold { background: #fbf1ea; border: 1px solid #e8c8ba; border-left: 6px solid var(--thread); border-radius: 8px; padding: 16px 20px; }
+.hold h2 { border: none; padding: 0; }
+.hold ul { margin: 8px 0 4px; padding-left: 20px; }
+footer { margin-top: 52px; border-top: 2px solid var(--line); padding-top: 16px; color: var(--soft); font-size: 14.5px; text-align: center; }
 </style>
 </head>
 <body>
+<div class="wrap">
 <header class="hero">
-<img class="heroimg" src="assets/intro-banner.png" alt="Backlit clover and grass heads, a fence and dark hedgerow, and a murmuration turning high in a dusk sky, no lettering anywhere">
-<div class="in">
-<img class="logo" src="assets/logo.png" alt="A ribbon of starling silhouettes in an S curve across a flat gold disc, three birds trailing at the tail">
-<h1>cma-credential-sanitizer</h1>
-<p>A field guide plate sequence for an evening watch. All example values on this page are plainly fictional placeholders, labelled as such, and no real credential value appears anywhere on the page.</p>
-<nav>
-<a class="reed" href="#controls">Sanitize the History File</a>
-<a class="reed" href="#controls">Search a Directory of Notebooks</a>
-<a class="reed" href="#controls">Sanitize All Supported Types</a>
-<a class="reed" href="#controls">Add Custom Patterns</a>
-<a class="reed" href="#cautions">Write Backups First</a>
-<a class="reed" href="#controls">Show Help</a>
-</nav>
-</div>
+  <img class="hero-logo" src="assets/logo.png" alt="One cream vellum sheet straight on, its upper half scraped smooth and completely blank and its lower half carrying only blurred ink strokes that form no letters, a scraping knife with a wooden handle resting across the boundary between them">
+  <h1>cma-credential-sanitizer</h1>
+  <p class="tagline">The Scraping Bench. A command line sanitizer that removes secrets from command history files and Jupyter notebooks by rewriting them in place. The knife lifts the value out of the line and the line itself stands: the key name, the quotes, and the shape of every entry stay where they were.</p>
+  <div class="btns">
+    <a class="btn solid" href="https://github.com/ShadowGuard-AI/cma-credential-sanitizer">The repository</a>
+    <a class="btn" href="https://github.com/ShadowGuard-AI/cma-credential-sanitizer/blob/main/main.py">main.py</a>
+  </div>
 </header>
-<main>
-<section class="plate" id="work"><h2>What Gets Redacted</h2>
-<p>cma-credential-sanitizer removes secrets from command history files, for bash, zsh, and PowerShell, and from Jupyter Notebooks. It identifies and redacts API keys, passwords, and other credentials using regular expressions. In notebooks it redacts code cell sources, markdown cell sources, and code cell outputs.</p>
-<p>No backup is written by default. With --backup the tool writes a timestamped .bak copy of each original file first, with owner only permissions, 0600. That backup contains the removed secrets in clear text and must be handled as credential material.</p>
-<div class="callout"><h3>Directory Means Notebooks Only</h3><p>Passing --directory without --filetype jupyter is rejected with exit 1, because the directory search only applies to notebooks.</p></div>
-<p>The machinery the source names: it uses os for file system access, re for regex, and shutil for backups when --backup is given, all from the standard library, which is why requirements.txt in this repository is an empty file.</p>
-</section>
-<div class="ant"></div>
-<section class="plate"><h2>Four Kinds of File</h2>
-<p>bash history at ~/.bash_history. zsh history at ~/.zsh_history. PowerShell history at ~/Documents/WindowsPowerShell/PSReadLine/ConsoleHost_history.txt. Notebooks found by recursive search for .ipynb files.</p>
-<div class="flag"><h3>Unhyphenated Name in the Source</h3>
-<pre>git clone https://github.com/ShadowGuardAI/cma-credential-sanitizer</pre>
-<p>The install passage is a single clone line, and as printed it reads ShadowGuardAI with no hyphen, the wrong organisation name. The address as printed does not name this repository's organisation, which is ShadowGuard-AI. No further install steps are added, because the source gives none.</p></div>
-<p><a href="https://github.com/ShadowGuard-AI/cma-credential-sanitizer">The repository on GitHub</a></p>
-</section>
-<div class="ant"></div>
-<section class="plate" id="controls"><h2>Seven Controls</h2>
-<div class="flag"><h3>Placeholder in the Source</h3><p>The source usage line, ./cma-credential-sanitizer [params], is a placeholder and runs nothing. The worked examples below are preserved in the code, retargeted to the repository's real entry point, main.py, and labelled as retargeted, because the examples in the source comments name a script file that is not in the repository.</p></div>
-<pre class="cmd">python3 main.py -t bash
+
+<figure>
+  <img src="assets/intro-banner.png" alt="The knife edge close up lifting a curled shaving from the vellum, the scraped area ahead of it smooth and blank and the faded manuscript strokes soft behind">
+  <figcaption>Ahead of the edge, smooth and blank; behind it, what has still to come off.</figcaption>
+</figure>
+
+<div class="facts">
+  <div class="fact"><b>File types</b>bash, zsh, powershell, and jupyter, chosen with -t</div>
+  <div class="fact"><b>Patterns</b>Assignments for api_key, password, secret, and access_token, and bearer tokens; only the captured value becomes REDACTED</div>
+  <div class="fact"><b>Backup</b>Off by default; --backup writes a timestamped .bak at 0600 holding the removed secrets in clear</div>
+  <div class="fact"><b>Dependencies</b>Standard library only; requirements.txt is empty</div>
+</div>
+
+<section>
+  <h2>Usage</h2>
+  <pre>python3 main.py -t bash
 python3 main.py -f /path/to/my/file.txt
 python3 main.py -a
 python3 main.py -t jupyter -d /path/to/notebooks
 python3 main.py -t bash -r custom_regexes.txt</pre>
-<table>
-<tr><td><b>-h</b></td><td>Shows a help message and exits.</td></tr>
-<tr><td><b>-t, --filetype</b></td><td>Chooses the type of file to sanitize, with choices bash, zsh, powershell, and jupyter.</td></tr>
-<tr><td><b>-f, --filepath</b></td><td>Gives the specific file path to sanitize and overrides --filetype if provided.</td></tr>
-<tr><td><b>-d, --directory</b></td><td>Gives the directory to recursively search for Jupyter Notebooks, and only applies when --filetype is jupyter.</td></tr>
-<tr><td><b>-a, --all</b></td><td>Sanitizes all supported file types, with notebooks searched recursively in the current directory.</td></tr>
-<tr><td><b>-r, --regex_file</b></td><td>Gives the path to a file containing custom regular expressions, one per line.</td></tr>
-<tr><td><b>--backup</b></td><td>Writes the timestamped .bak copy described on the first plate, and is off by default. It has no short form.</td></tr>
-</table>
-<div class="flag"><h3>Undescribed in the Source List</h3><p>The source describes --filepath and --backup in full, and gives --filetype, --directory, --all, and --regex_file only as No description provided. The seven entries above come from the argument parser in main.py.</p></div>
+  <p>The README's preserved usage line is a placeholder that runs nothing; the run lines above stand in its flagged completion section, retargeted to the real entry point main.py and labelled as retargeted there. Default places looked: ~/.bash_history, ~/.zsh_history, and ~/Documents/WindowsPowerShell/PSReadLine/ConsoleHost_history.txt, with notebooks found by recursive search from the current directory when no directory is named.</p>
+  <table>
+    <tr><th>Option</th><th>What it does</th></tr>
+    <tr><td><code>-t</code>, <code>--filetype</code></td><td>Choose the type of file to sanitize: bash, zsh, powershell, or jupyter.</td></tr>
+    <tr><td><code>-f</code>, <code>--filepath</code></td><td>The specific file path to sanitize. Overrides --filetype if provided.</td></tr>
+    <tr><td><code>-d</code>, <code>--directory</code></td><td>A directory to recursively search for Jupyter notebooks. Only applies when --filetype is jupyter.</td></tr>
+    <tr><td><code>-a</code>, <code>--all</code></td><td>Sanitize all supported file types, with notebooks searched recursively in the current directory.</td></tr>
+    <tr><td><code>-r</code>, <code>--regex_file</code></td><td>A file of custom regular expressions, one per line.</td></tr>
+    <tr><td><code>--backup</code></td><td>Write a timestamped .bak copy of each original first, at owner only permissions (0600). Off by default.</td></tr>
+    <tr><td><code>-h</code></td><td>Show help message and exit.</td></tr>
+  </table>
 </section>
-<div class="ant"></div>
-<section class="plate" id="redaction"><h2>What a Redaction Looks Like</h2>
-<p>The built in patterns match assignments for api_key, password, secret, and access_token, and bearer tokens following the word bearer. Only the captured value is replaced, with the word REDACTED, while the key name stays and any quotes around the value stay, so the line still shows what kind of thing was there.</p>
-<p>One worked line, a fictional placeholder and nothing else:</p>
-<pre>api_key = "fictional-example-value"
-comes back as
-api_key = "REDACTED"</pre>
-<p>A pattern with no capture group, possible in a custom regex file, has its whole match replaced instead. For notebooks: cell sources keep their shape, whether one string or a list of lines, and code cell outputs are redacted in their text, in their data values, and in their tracebacks.</p>
+
+<figure>
+  <img src="assets/banner.png" alt="A binder's bench with vellum sheets at different stages of scraping laid along it, a scraper lifting curled shavings from one sheet, a pumice stone and a water bowl beside it and finished blank sheets stacked at the bench end">
+  <figcaption>Sheets at every stage, and the finished stack tied at the bench end.</figcaption>
+</figure>
+
+<section class="hold">
+  <h2>Stated limits</h2>
+  <ul>
+    <li>Every file is rewritten whether anything matched or not, and reading drops bytes that are not valid UTF-8, so a history file with damaged or foreign encoding comes back normalised and silently shorter. Sanitising a live history file also races the shell still appending to it.</li>
+    <li>Only the captured value is replaced: a pattern with no capture group has its whole match replaced instead. A worked line from the README, a plainly fictional placeholder: api_key = "fictional-example-value" comes back as api_key = "REDACTED".</li>
+    <li>In notebooks, code and markdown cell sources and code cell outputs, in their text, their data values, and their tracebacks, are redacted with each source's string or list shape kept, and the whole notebook is then reserialised at indent 1 whatever its original formatting was, so a diff of the result shows a whole file rewrite and cannot show what was actually redacted.</li>
+    <li>Passing --directory without --filetype jupyter is rejected with exit 1, because the directory search only applies to notebooks. With no action flag at all the tool prints its help and exits 1, and an --all run never checks the per file results, so a missing history file in that mode is logged inside the run and then covered by a closing line saying sanitization is complete.</li>
+    <li>The backup is credential material in its own right: it contains the removed secrets in clear text, at owner only permissions.</li>
+  </ul>
 </section>
-<div class="ant"></div>
-<section class="plate" id="cautions"><h2>Backups Hold the Secrets</h2>
-<div class="callout"><h3>A Backup Is Credential Material</h3><p>A backup holds the removed secrets in clear text and is credential material. With --backup the tool writes a timestamped .bak copy of each original file first, with owner only permissions, 0600.</p></div>
-<p>Cautions at full size, because this tool rewrites the files it touches. With no action flag at all, the tool prints its help and exits with code 1. A --filepath run that fails exits with code 1, while an --all run does not check the per file results, so a missing history file in that mode is logged inside the run and then covered by a closing line saying sanitization is complete.</p>
-<p>Every file is rewritten whether anything matched or not, and reading drops bytes that are not valid UTF-8, so a history file with damaged or foreign encoding comes back normalised and silently shorter. Sanitizing a live history file races the shell that is still appending to it, and the caller should close that session first. A sanitized notebook is reserialised at indent 1 whatever its original formatting was, so a diff of the result shows a whole file rewrite and cannot show what was actually redacted.</p>
-<div class="flag"><h3>Unhyphenated Name in the Source</h3>
-<pre>Copyright (c) ShadowGuardAI</pre>
-<p>That licence line is unhyphenated and wrong. The LICENSE file itself carries the MIT License. Both facts are printed here, the first under this flag.</p></div>
-<h2>License, With a Fault Flagged</h2>
-<p>Licence closes the plates with the fault above flagged, not smoothed over.</p>
-</section>
-</main>
-<footer><p>Theme: The Starling Murmuration Forecast. Type: Baloo Tammudu 2 for headings, Barlow for reading, both SIL Open Font License 1.1. The lettering reference Skirmisher was reference only and is not embedded. Every example value on this page is a fictional placeholder.</p></footer>
+
+<footer>
+  <p>The README of cma-credential-sanitizer closes with a copyright line reading Copyright (c) ShadowGuardAI, without the hyphen; the repository's LICENSE file carries the MIT License. Site type is set in Philosopher and Quattrocento Sans, self-hosted under the SIL Open Font License.</p>
+</footer>
+</div>
 </body>
 </html>

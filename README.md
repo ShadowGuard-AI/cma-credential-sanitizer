@@ -1,12 +1,12 @@
-![Backlit clover and grass heads, a fence and dark hedgerow with a murmuration ribbon crossing at hedge height, and the flock main body turning high in a dusk sky, no lettering anywhere](intro-banner.png)
+![The knife edge close up lifting a curled shaving from the vellum, the scraped area ahead of it smooth and blank and the faded manuscript strokes soft behind](intro-banner.png)
 
 > Common name first: credential sanitizer. Latin where honest: the starling is Sturnus vulgaris. A field guide entry, Baloo Tammudu 2 in hive wood on a sky plate, with a murmuration drawn once as a header plate under this block.
 
 # cma-credential-sanitizer
 
-![The murmuration mark: a ribbon of starling silhouettes in an S curve across a flat gold disc, three birds trailing at the tail](logo.png)
+![One cream vellum sheet straight on, its upper half scraped smooth and completely blank and its lower half carrying only blurred ink strokes that form no letters, a scraping knife with a wooden handle resting across the boundary between them, the heading plate](logo.png)
 
-![The edge of a field at dusk: a clover field, a fence of hive wood posts, a dark hedgerow, a murmuration turning against the sky, two parked cars with watchers, and a hive wood sign board on the tallest fence post carrying the title](banner.png)
+![A binder's bench with vellum sheets at different stages of scraping laid along it, a scraper lifting curled shavings from one sheet, a pumice stone and a water bowl beside it and finished blank sheets stacked at the bench end](banner.png)
 
 ![A field at dusk in three depths: a distant scatter drifts across the far sky, the main murmuration ribbon turns between a wide ribbon and a tighter knot above the hedgerow, and grass heads sway at the near edge](scene.svg)
 
